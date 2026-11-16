@@ -1,5 +1,7 @@
 # Encurtador de URL (FastAPI + Postgres + Alembic)
 
+[![CI](https://github.com/LuizMiguel1905/url-shortener/actions/workflows/ci.yml/badge.svg)](https://github.com/LuizMiguel1905/url-shortener/actions/workflows/ci.yml)
+
 ## Rodando
 
 ```bash
