@@ -1,5 +1,3 @@
-"""Regras de negócio dos links, independentes de HTTP."""
-
 import secrets
 import string
 
@@ -17,11 +15,11 @@ MAX_GENERATION_ATTEMPTS = 5
 
 
 class CodeUnavailableError(Exception):
-    """O código personalizado já existe ou é reservado."""
+    pass
 
 
 class CodeGenerationError(Exception):
-    """Não foi possível gerar um código aleatório livre."""
+    pass
 
 
 def generate_code() -> str:
@@ -45,7 +43,6 @@ def create_link(db: Session, target_url: str, custom_code: str | None = None) ->
 
 
 def resolve_link(db: Session, code: str) -> str | None:
-    """Retorna a URL de destino e incrementa o contador de cliques, numa única query."""
     target_url = db.execute(
         update(Link)
         .where(Link.code == code)

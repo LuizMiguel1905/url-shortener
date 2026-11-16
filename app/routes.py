@@ -21,7 +21,6 @@ def create_link(payload: LinkCreate, db: DbSession) -> LinkOut:
     return LinkOut.from_model(link)
 
 
-# Precisa ser registrada por último: captura qualquer caminho de um segmento.
 @router.get("/{code}", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 def redirect(code: str, db: DbSession) -> RedirectResponse:
     target_url = services.resolve_link(db, code)
