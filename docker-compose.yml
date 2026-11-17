@@ -5,6 +5,7 @@ x-app: &app
   environment:
     DATABASE_URL: postgresql+psycopg://encurtador:encurtador@db:5432/encurtador
     BASE_URL: http://localhost:8000
+    WEB_CONCURRENCY: ${WEB_CONCURRENCY:-1}
 
 services:
   db:
@@ -36,6 +37,10 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      interval: 2s
+      retries: 15
 
   tests:
     build:
@@ -46,6 +51,25 @@ services:
       TEST_DATABASE_URL: postgresql+psycopg://encurtador:encurtador@db:5432/encurtador_test
     depends_on:
       db:
+        condition: service_healthy
+
+  k6:
+    image: grafana/k6:0.55.0
+    profiles: ["load"]
+    environment:
+      BASE_URL: http://api:8000
+      VUS: ${VUS:-50}
+      DURATION: ${DURATION:-30s}
+      K6_WEB_DASHBOARD: "true"
+      K6_WEB_DASHBOARD_HOST: 0.0.0.0
+      K6_WEB_DASHBOARD_EXPORT: /loadtest/report.html
+    ports:
+      - "5665:5665"
+    volumes:
+      - ./loadtest:/loadtest
+    command: run /loadtest/script.js
+    depends_on:
+      api:
         condition: service_healthy
 
 volumes:

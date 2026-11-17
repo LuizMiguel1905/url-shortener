@@ -62,6 +62,31 @@ migrações do Alembic, e as tabelas são limpas após cada teste.
 Fora do Docker: `pip install -r requirements-dev.txt` e `pytest` (usa `localhost:5433` por padrão,
 ou a variável `TEST_DATABASE_URL`).
 
+## Teste de carga (k6)
+
+```bash
+docker compose up -d --build
+docker compose --profile load run --rm --service-ports k6
+```
+
+O k6 só começa quando a API está saudável. Depois de mudar o código, suba com `--build`: sem ele o
+Compose reaproveita a imagem antiga e você mede o código velho.
+
+Durante o teste, o dashboard com gráficos em tempo real fica em http://localhost:5665 (só enquanto ele roda).
+Ao final, o relatório é salvo em `loadtest/report.html`.
+
+Mistura 90% de `GET /{code}` e 10% de `POST /links`, com limites de falha (< 1%) e de latência (p95 < 500 ms).
+Ajustes por variável de ambiente: `VUS` (padrão 50), `DURATION` (padrão 30s) e `WEB_CONCURRENCY`
+(workers do uvicorn na API, padrão 1):
+
+```bash
+WEB_CONCURRENCY=4 docker compose up -d --build api
+VUS=100 DURATION=2m docker compose --profile load run --rm --service-ports k6
+```
+
+Cada worker tem o próprio pool de conexões: o total é `WEB_CONCURRENCY` x (5 + 10) e precisa ficar
+abaixo do `max_connections` do Postgres (100 por padrão).
+
 ## Estrutura
 
 ```
@@ -75,6 +100,7 @@ app/
   main.py       cria o app e registra as rotas
 migrations/     Alembic (env.py lê a URL de app.config)
 tests/          pytest (conftest cria o banco de teste e aplica as migrações)
+loadtest/       script k6
 ```
 
 ## Rodando fora do Docker
