@@ -58,6 +58,7 @@ migrações do Alembic, e as tabelas são limpas após cada teste.
 - `tests/test_api.py`: rotas HTTP (criação, validação, conflitos, redirecionamento, 404, 503)
 - `tests/test_services.py`: regras de negócio (geração de código, retentativas em colisão, cliques)
 - `tests/test_migrations.py`: `alembic check` (modelo sem migração falha o teste) e downgrade/upgrade
+- `tests/test_pool.py`: mais requisições simultâneas que threads e conexões não pode travar, e toda rota devolve a conexão ao pool
 
 Fora do Docker: `pip install -r requirements-dev.txt` e `pytest` (usa `localhost:5433` por padrão,
 ou a variável `TEST_DATABASE_URL`).
@@ -92,11 +93,11 @@ abaixo do `max_connections` do Postgres (100 por padrão).
 ```
 app/
   config.py     configurações (DATABASE_URL, BASE_URL) via env/.env
-  database.py   engine, Base (com naming convention), sessão e dependência DbSession
+  database.py   engine, Base (com naming convention) e SessionLocal
   models.py     modelo Link
   schemas.py    entrada/saída da API (Pydantic)
   services.py   regras de negócio (gerar código, criar, resolver) — sem HTTP
-  routes.py     rotas FastAPI, traduz erros de domínio em status HTTP
+  routes.py     rotas FastAPI, abrem e fecham a sessão dentro da rota e traduzem erros de domínio em status HTTP
   main.py       cria o app e registra as rotas
 migrations/     Alembic (env.py lê a URL de app.config)
 tests/          pytest (conftest cria o banco de teste e aplica as migrações)
