@@ -1,9 +1,5 @@
-from collections.abc import Iterator
-from typing import Annotated
-
-from fastapi import Depends
 from sqlalchemy import MetaData, create_engine
-from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from app.config import settings
 
@@ -21,11 +17,3 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False)
 
 class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
-
-
-def get_db() -> Iterator[Session]:
-    with SessionLocal() as db:
-        yield db
-
-
-DbSession = Annotated[Session, Depends(get_db)]

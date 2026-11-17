@@ -8,7 +8,9 @@ TEST_DATABASE_URL = os.environ.get(
     "TEST_DATABASE_URL",
     "postgresql+psycopg://encurtador:encurtador@localhost:5433/encurtador_test",
 )
+TEST_REDIS_URL = os.environ.get("TEST_REDIS_URL", "redis://localhost:6380/1")
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+os.environ["REDIS_URL"] = TEST_REDIS_URL
 os.environ["BASE_URL"] = "http://test.local"
 
 from alembic import command
@@ -17,6 +19,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, make_url, text
 from sqlalchemy.orm import Session
 
+from app.cache import redis_client
 from app.database import SessionLocal, engine
 from app.main import app
 
@@ -49,6 +52,19 @@ def _migrated_database(alembic_config: Config) -> Iterator[None]:
     command.upgrade(alembic_config, "head")
     yield
     engine.dispose()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _isolated_redis() -> None:
+    if redis_client.connection_pool.connection_kwargs.get("db", 0) == 0:
+        raise RuntimeError("O Redis de teste deve usar um banco diferente do 0")
+
+
+@pytest.fixture(autouse=True)
+def _clean_redis() -> Iterator[None]:
+    redis_client.flushdb()
+    yield
+    redis_client.flushdb()
 
 
 @pytest.fixture(autouse=True)
