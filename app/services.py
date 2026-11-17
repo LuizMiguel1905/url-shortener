@@ -1,7 +1,7 @@
 import secrets
 import string
 
-from sqlalchemy import update
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -42,16 +42,14 @@ def create_link(db: Session, target_url: str, custom_code: str | None = None) ->
     raise CodeGenerationError
 
 
-def resolve_link(db: Session, code: str) -> str | None:
-    target_url = db.execute(
-        update(Link)
-        .where(Link.code == code)
-        .values(clicks=Link.clicks + 1)
-        .returning(Link.target_url)
-    ).scalar_one_or_none()
-    if target_url is not None:
-        db.commit()
-    return target_url
+def find_target_url(db: Session, code: str) -> str | None:
+    return db.scalar(select(Link.target_url).where(Link.code == code))
+
+
+def add_clicks(db: Session, clicks_by_code: dict[str, int]) -> None:
+    for code, amount in clicks_by_code.items():
+        db.execute(update(Link).where(Link.code == code).values(clicks=Link.clicks + amount))
+    db.commit()
 
 
 def _try_insert(db: Session, code: str, target_url: str) -> Link | None:

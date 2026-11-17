@@ -48,14 +48,24 @@ def test_custom_code_conflict_raises(db: Session) -> None:
         services.create_link(db, "https://b.com", "mine")
 
 
-def test_resolve_link_increments_clicks(db: Session) -> None:
-    link = services.create_link(db, "https://a.com", "abc123")
+def test_find_target_url_returns_the_url(db: Session) -> None:
+    services.create_link(db, "https://a.com", "abc123")
 
-    assert services.resolve_link(db, "abc123") == "https://a.com"
-
-    db.refresh(link)
-    assert link.clicks == 1
+    assert services.find_target_url(db, "abc123") == "https://a.com"
 
 
-def test_resolve_unknown_link_returns_none(db: Session) -> None:
-    assert services.resolve_link(db, "nope") is None
+def test_find_unknown_target_url_returns_none(db: Session) -> None:
+    assert services.find_target_url(db, "nope") is None
+
+
+def test_add_clicks_accumulates_per_code(db: Session) -> None:
+    first = services.create_link(db, "https://a.com", "abc123")
+    second = services.create_link(db, "https://b.com", "def456")
+
+    services.add_clicks(db, {"abc123": 3, "def456": 1})
+    services.add_clicks(db, {"abc123": 2})
+
+    db.refresh(first)
+    db.refresh(second)
+    assert first.clicks == 5
+    assert second.clicks == 1

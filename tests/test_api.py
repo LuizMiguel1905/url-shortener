@@ -4,7 +4,7 @@ from httpx import Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import services
+from app import redirects, services
 from app.config import settings
 from app.models import Link
 
@@ -78,6 +78,8 @@ class TestRedirect:
             response = client.get(f"/{code}", follow_redirects=False)
             assert response.status_code == 307
             assert response.headers["location"] == TARGET
+
+        redirects.flush_pending_clicks()
 
         assert db.scalar(select(Link.clicks).where(Link.code == code)) == 2
 
